@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Mapeo Lineal de Intervalos</title>
+    <meta name="description" content="Convierte cualquier valor de un intervalo [a, b] al intervalo [A, B] con una transformación lineal. Aplicación instalable que funciona sin conexión en móvil, tablet y escritorio.">
+
+    <!-- Color de la interfaz del navegador / barra de estado -->
+    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#020617" media="(prefers-color-scheme: dark)">
+    <meta name="color-scheme" content="light dark">
+
+    <!-- PWA -->
+    <link rel="manifest" href="./manifest.json">
+    <meta name="application-name" content="Mapeo Lineal">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Mapeo Lineal">
+    <meta name="format-detection" content="telephone=no">
+
+    <!-- Iconos -->
+    <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml">
+    <link rel="icon" href="./icons/favicon-32.png" sizes="32x32" type="image/png">
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon-180.png">
+
+    <!-- Recursos locales (sin CDN: la app funciona offline) -->
+    <link rel="preload" href="./fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="./styles.css">
+</head>
+<body class="flex min-h-[100svh] flex-col">
+
+    <main class="mx-auto flex w-full max-w-5xl flex-grow flex-col px-4 py-6 sm:px-6 sm:py-10 lg:px-8">
+
+        <!-- Encabezado -->
+        <header class="mb-6 text-center sm:mb-8">
+            <div class="mb-4 inline-flex items-center justify-center rounded-2xl bg-indigo-100 p-2.5 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400">
+                <svg class="h-7 w-7 sm:h-8 sm:w-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                </svg>
+            </div>
+            <h1 class="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl md:text-4xl dark:text-white">
+                Mapeo Lineal de Intervalos
+            </h1>
+            <p class="mx-auto mt-2 max-w-2xl text-sm leading-relaxed text-slate-600 sm:text-base md:text-lg dark:text-slate-400">
+                Transforma linealmente cualquier valor del intervalo origen
+                <span class="font-mono font-semibold text-indigo-600 dark:text-indigo-400">[a, b]</span>
+                al intervalo destino
+                <span class="font-mono font-semibold text-emerald-600 dark:text-emerald-400">[A, B]</span>.
+            </p>
+
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <button id="install-btn" type="button" class="btn-secondary hidden">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                    </svg>
+                    <span>Instalar aplicación</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Cuadrícula principal: 1 columna en móvil, 2 en tablet, 5/7 en escritorio -->
+        <div class="grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-12 lg:gap-8">
+
+            <!-- Columna izquierda: parámetros y evaluación -->
+            <div class="grid grid-cols-1 gap-4 sm:gap-5 md:grid-cols-2 lg:col-span-5 lg:grid-cols-1 lg:gap-8 lg:self-start">
+
+                <!-- Tarjeta 1: intervalos -->
+                <section class="card" aria-labelledby="title-intervals">
+                    <h2 id="title-intervals" class="mb-4 flex items-center gap-2 text-base font-semibold sm:text-lg">
+                        <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-indigo-500" aria-hidden="true"></span>
+                        1. Definir intervalos
+                    </h2>
+
+                    <!-- Intervalo origen -->
+                    <fieldset class="mb-4">
+                        <legend class="mb-2 block text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                            Intervalo origen <span class="font-mono normal-case tracking-normal">(a, b)</span>
+                        </legend>
+                        <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                            <div>
+                                <label for="input-a" class="field-label">Valor a <span class="font-normal text-slate-400">(mín)</span></label>
+                                <div class="relative">
+                                    <input type="text" id="input-a" value="0" inputmode="decimal" autocomplete="off"
+                                        autocapitalize="off" spellcheck="false" enterkeyhint="next"
+                                        class="num-input" aria-label="Valor a, extremo mínimo del intervalo origen">
+                                    <button type="button" class="sign-btn" data-sign="input-a" aria-label="Cambiar el signo del valor a">±</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="input-b" class="field-label">Valor b <span class="font-normal text-slate-400">(máx)</span></label>
+                                <div class="relative">
+                                    <input type="text" id="input-b" value="100" inputmode="decimal" autocomplete="off"
+                                        autocapitalize="off" spellcheck="false" enterkeyhint="next"
+                                        class="num-input" aria-label="Valor b, extremo máximo del intervalo origen">
+                                    <button type="button" class="sign-btn" data-sign="input-b" aria-label="Cambiar el signo del valor b">±</button>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Intervalo destino -->
+                    <fieldset>
+                        <legend class="mb-2 block text-xs font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                            Intervalo destino <span class="font-mono normal-case tracking-normal">(A, B)</span>
+                        </legend>
+                        <div class="grid grid-cols-2 gap-3 sm:gap-4">
+                            <div>
+                                <label for="input-A" class="field-label">Valor A <span class="font-normal text-slate-400">(mín)</span></label>
+                                <div class="relative">
+                                    <input type="text" id="input-A" value="-1" inputmode="decimal" autocomplete="off"
+                                        autocapitalize="off" spellcheck="false" enterkeyhint="next"
+                                        class="num-input" aria-label="Valor A, extremo mínimo del intervalo destino">
+                                    <button type="button" class="sign-btn" data-sign="input-A" aria-label="Cambiar el signo del valor A">±</button>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="input-B" class="field-label">Valor B <span class="font-normal text-slate-400">(máx)</span></label>
+                                <div class="relative">
+                                    <input type="text" id="input-B" value="1" inputmode="decimal" autocomplete="off"
+                                        autocapitalize="off" spellcheck="false" enterkeyhint="next"
+                                        class="num-input" aria-label="Valor B, extremo máximo del intervalo destino">
+                                    <button type="button" class="sign-btn" data-sign="input-B" aria-label="Cambiar el signo del valor B">±</button>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Mensaje de error -->
+                    <div id="error-box" class="mt-4 hidden items-start gap-2 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-600 dark:border-rose-800 dark:bg-rose-950/50 dark:text-rose-400" role="alert">
+                        <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <span id="error-text">El intervalo origen no puede tener longitud cero.</span>
+                    </div>
+                </section>
+
+                <!-- Tarjeta 2: evaluación de un punto -->
+                <section class="card flex flex-col" aria-labelledby="title-evaluate">
+                    <h2 id="title-evaluate" class="mb-4 flex items-center gap-2 text-base font-semibold sm:text-lg">
+                        <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-emerald-500" aria-hidden="true"></span>
+                        2. Evaluar punto (x → y)
+                    </h2>
+
+                    <div class="flex flex-1 flex-col justify-between gap-4">
+                        <div>
+                            <div class="mb-1.5 flex items-end justify-between gap-2">
+                                <label for="input-x" class="field-label mb-0">
+                                    Valor de entrada <span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">x</span>
+                                </label>
+                                <span id="percentage-badge" class="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 font-mono text-xs text-slate-600 dark:bg-slate-800 dark:text-slate-400">50.0%</span>
+                            </div>
+
+                            <div class="relative mb-2">
+                                <input type="text" id="input-x" value="50" inputmode="decimal" autocomplete="off"
+                                    autocapitalize="off" spellcheck="false" enterkeyhint="done"
+                                    class="num-input" aria-label="Valor de entrada x">
+                                <button type="button" class="sign-btn" data-sign="input-x" aria-label="Cambiar el signo del valor x">±</button>
+                            </div>
+
+                            <!-- Deslizador sincronizado -->
+                            <label for="slider-x" class="sr-only">Ajustar el valor de entrada x con el deslizador</label>
+                            <input type="range" id="slider-x" class="range-slider" min="0" max="100" value="50" step="0.1">
+                            <div class="-mt-1 flex justify-between px-0.5 font-mono text-[11px] text-slate-500 dark:text-slate-400" aria-hidden="true">
+                                <span id="slider-min">0</span>
+                                <span id="slider-max">100</span>
+                            </div>
+                        </div>
+
+                        <!-- Resultado -->
+                        <div class="flex items-center justify-between gap-3 rounded-xl border border-slate-200/80 bg-slate-50 p-3.5 sm:p-4 dark:border-slate-700/80 dark:bg-slate-800/60">
+                            <div class="min-w-0">
+                                <span class="block text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-slate-400">Valor mapeado (y)</span>
+                                <output id="output-y" for="input-x slider-x" aria-live="polite" class="block truncate font-mono text-2xl font-bold text-emerald-600 sm:text-3xl dark:text-emerald-400">0</output>
+                            </div>
+                            <button id="copy-btn" type="button" class="btn-icon" aria-label="Copiar el resultado y">
+                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Columna derecha: visualización y fórmula -->
+            <div class="flex flex-col gap-4 sm:gap-5 lg:col-span-7 lg:gap-8">
+
+                <!-- Tarjeta 3: representación visual -->
+                <section class="card flex flex-grow flex-col" aria-labelledby="title-chart">
+                    <div class="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                        <h2 id="title-chart" class="flex items-center gap-2 text-base font-semibold sm:text-lg">
+                            <span class="h-2.5 w-2.5 shrink-0 rounded-full bg-amber-500" aria-hidden="true"></span>
+                            Representación visual
+                        </h2>
+                        <span class="text-[11px] text-slate-500 sm:text-xs dark:text-slate-400">Arrastra sobre el gráfico para explorar</span>
+                    </div>
+
+                    <div id="canvas-container" class="relative h-[270px] w-full flex-grow overflow-hidden rounded-xl border border-slate-200/70 bg-slate-50 sm:h-[330px] md:h-[360px] lg:h-auto lg:min-h-[320px] [@media(max-height:500px)]:h-[200px] [@media(max-height:500px)]:min-h-0 dark:border-slate-800 dark:bg-slate-950/60">
+                        <canvas id="mapping-canvas" class="canvas-surface block h-full w-full cursor-crosshair" role="img"
+                            aria-label="Gráfico de la transformación lineal entre el intervalo origen y el intervalo destino"></canvas>
+                    </div>
+                </section>
+
+                <!-- Tarjeta 4: fórmula -->
+                <section class="card" aria-labelledby="title-formula">
+                    <h2 id="title-formula" class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                        Fórmula de transformación
+                    </h2>
+
+                    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-1">
+                        <div class="rounded-xl border border-slate-200/60 bg-slate-50 p-3.5 dark:border-slate-800 dark:bg-slate-800/50">
+                            <span class="mb-1 block text-xs text-slate-500 dark:text-slate-400">Ecuación general</span>
+                            <code class="block overflow-x-auto whitespace-nowrap font-mono text-xs text-slate-800 sm:text-sm dark:text-slate-200">y = A + ((x - a) / (b - a)) · (B - A)</code>
+                        </div>
+
+                        <div class="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3.5 dark:border-indigo-900/50 dark:bg-indigo-950/30">
+                            <span class="mb-1 block text-xs text-indigo-600 dark:text-indigo-400">Forma pendiente-ordenada (y = mx + n)</span>
+                            <code id="simplified-formula" class="block overflow-x-auto whitespace-nowrap font-mono text-xs font-semibold text-indigo-900 sm:text-sm dark:text-indigo-200">y = 0.02x - 1</code>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <noscript>
+            <p class="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-800">
+                Esta aplicación necesita JavaScript para calcular la transformación.
+            </p>
+        </noscript>
+    </main>
+
+    <footer class="mx-auto flex w-full max-w-5xl flex-col items-center justify-between gap-2 px-4 pb-4 pt-1 text-[11px] text-slate-500 sm:flex-row sm:px-6 lg:px-8 dark:text-slate-500 safe-bottom">
+        <p>Mapeo Lineal · aplicación web instalable</p>
+        <p class="inline-flex items-center gap-1.5">
+            <span id="net-dot" class="h-1.5 w-1.5 rounded-full bg-slate-400 transition-colors" aria-hidden="true"></span>
+            <span id="net-text">Comprobando modo sin conexión…</span>
+        </p>
+    </footer>
+
+    <!-- Notificación flotante -->
+    <div id="toast" role="status" aria-live="polite"
+        class="pointer-events-none fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-50 flex max-w-[calc(100vw-2rem)] -translate-x-1/2 translate-y-24 items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-medium text-white opacity-0 shadow-lg transition-all duration-300 dark:bg-white dark:text-slate-900">
+        <svg class="h-4 w-4 shrink-0 text-emerald-400 dark:text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span id="toast-text" class="text-left">Resultado copiado al portapapeles</span>
+    </div>
+
+    <!-- Aviso de actualización -->
+    <div id="update-toast" role="status" aria-live="polite"
+        class="pointer-events-none fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-50 mx-auto flex max-w-md -translate-y-24 items-center gap-3 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-medium text-white opacity-0 shadow-xl transition-all duration-300">
+        <span class="flex-1 text-left">Hay una versión nueva disponible.</span>
+        <button id="reload-btn" type="button" class="pointer-events-auto min-h-[2rem] shrink-0 rounded-lg bg-white/20 px-3 py-1.5 text-sm font-semibold transition hover:bg-white/30">
+            Actualizar
+        </button>
+    </div>
+
+    <script>
+        /**
+         * Mapeo Lineal de Intervalos
+         * Transformación afín y = A + ((x - a) / (b - a)) · (B - A)
+         */
+        (() => {
+            'use strict';
+
+            const $ = (id) => document.getElementById(id);
+            const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
+            const el = {
+                a: $('input-a'),
+                b: $('input-b'),
+                targetA: $('input-A'),
+                targetB: $('input-B'),
+                x: $('input-x'),
+                slider: $('slider-x'),
+                sliderMin: $('slider-min'),
+                sliderMax: $('slider-max'),
+                output: $('output-y'),
+                percentage: $('percentage-badge'),
+                formula: $('simplified-formula'),
+                errorBox: $('error-box'),
+                errorText: $('error-text'),
+                copyBtn: $('copy-btn'),
+                canvas: $('mapping-canvas'),
+                container: $('canvas-container'),
+                toast: $('toast'),
+                toastText: $('toast-text'),
+                updateToast: $('update-toast'),
+                reloadBtn: $('reload-btn'),
+                installBtn: $('install-btn'),
+                netDot: $('net-dot'),
+                netText: $('net-text'),
+            };
+
+            const ctx = el.canvas.getContext('2d');
+
+            const state = {
+                a: 0,
+                b: 100,
+                A: -1,
+                B: 1,
+                x: 50,
+                y: 0,
+                t: 0.5,
+                valid: true,
+                dragging: false,
+                pointerId: null,
+            };
+
+            let toastTimer = null;
+            let reloading = false;
+
+            /* ----------------------------- utilidades ----------------------------- */
+
+            function formatNumber(value) {
+                if (!Number.isFinite(value)) return '—';
+                const rounded = Number(value.toFixed(6));
+                if (Object.is(rounded, -0)) return '0';
+                return String(rounded);
+            }
+
+            function readNumber(input) {
+                const raw = String(input.value || '').trim().replace(/\s+/g, '').replace(',', '.');
+                if (raw === '' || raw === '-' || raw === '.' || raw === '-.') return NaN;
+                const value = Number(raw);
+                return Number.isFinite(value) ? value : NaN;
+            }
+
+            function showToast(message, duration = 2200) {
+                el.toastText.textContent = message;
+                el.toast.classList.remove('translate-y-24', 'opacity-0');
+                el.toast.classList.add('translate-y-0', 'opacity-100');
+                clearTimeout(toastTimer);
+                toastTimer = setTimeout(() => {
+                    el.toast.classList.add('translate-y-24', 'opacity-0');
+                    el.toast.classList.remove('translate-y-0', 'opacity-100');
+                }, duration);
+            }
+
+            /* ------------------------------- cálculo ------------------------------ */
+
+            function showError(message) {
+                state.valid = false;
+                el.errorText.textContent = message;
+                el.errorBox.classList.remove('hidden');
+                el.errorBox.classList.add('flex');
+                el.output.textContent = '—';
+                el.formula.textContent = '—';
+                el.percentage.textContent = '—';
+                draw();
+            }
+
+            function hideError() {
+                state.valid = true;
+                el.errorBox.classList.add('hidden');
+                el.errorBox.classList.remove('flex');
+            }
+
+            function render(source = 'inputs') {
+                const a = readNumber(el.a);
+                const b = readNumber(el.b);
+                const A = readNumber(el.targetA);
+                const B = readNumber(el.targetB);
+
+                if ([a, b, A, B].some(Number.isNaN)) {
+                    showError('Introduce valores numéricos válidos en los cuatro extremos del intervalo.');
+                    return;
+                }
+
+                if (a === b) {
+                    showError('El intervalo origen no puede tener longitud cero: a y b deben ser distintos.');
+                    return;
+                }
+
+                hideError();
+
+                state.a = a;
+                state.b = b;
+                state.A = A;
+                state.B = B;
+
+                const min = Math.min(a, b);
+                const max = Math.max(a, b);
+                const span = max - min || 1;
+
+                el.slider.min = String(min);
+                el.slider.max = String(max);
+                el.slider.step = String(span / 1000);
+                el.sliderMin.textContent = formatNumber(min);
+                el.sliderMax.textContent = formatNumber(max);
+
+                if (source === 'slider') {
+                    state.x = Number(el.slider.value);
+                    el.x.value = formatNumber(state.x);
+                } else {
+                    const parsed = readNumber(el.x);
+                    state.x = Number.isNaN(parsed) ? a : parsed;
+                    el.slider.value = String(clamp(state.x, min, max));
+                }
+
+                const t = (state.x - a) / (b - a);
+                const y = A + t * (B - A);
+                const m = (B - A) / (b - a);
+                const n = A - m * a;
+
+                state.t = t;
+                state.y = y;
+
+                el.output.textContent = formatNumber(y);
+                el.percentage.textContent = `${(t * 100).toFixed(1)}%`;
+                el.formula.textContent = `y = ${formatNumber(m)}x ${n < 0 ? '−' : '+'} ${formatNumber(Math.abs(n))}`;
+
+                el.canvas.setAttribute(
+                    'aria-label',
+                    `Intervalo origen de ${formatNumber(a)} a ${formatNumber(b)}; intervalo destino de ${formatNumber(A)} a ${formatNumber(B)}. ` +
+                    `El valor ${formatNumber(state.x)} se transforma en ${formatNumber(y)}.`
+                );
+
+                draw();
+            }
+
+            /* -------------------------------- canvas ------------------------------ */
+
+            function metrics() {
+                const width = el.container.clientWidth;
+                const height = el.container.clientHeight;
+                const compact = width < 420;
+                const padX = compact ? 26 : Math.max(32, Math.min(64, width * 0.09));
+                return {
+                    width,
+                    height,
+                    compact,
+                    padX,
+                    lineWidth: Math.max(1, width - padX * 2),
+                    topY: height * 0.29,
+                    bottomY: height * 0.71,
+                };
+            }
+
+            function pathRoundRect(context, x, y, width, height, radius) {
+                const r = Math.min(radius, width / 2, height / 2);
+                context.beginPath();
+                if (typeof context.roundRect === 'function') {
+                    context.roundRect(x, y, width, height, r);
+                    return;
+                }
+                context.moveTo(x + r, y);
+                context.arcTo(x + width, y, x + width, y + height, r);
+                context.arcTo(x + width, y + height, x, y + height, r);
+                context.arcTo(x, y + height, x, y, r);
+                context.arcTo(x, y, x + width, y, r);
+                context.closePath();
+            }
+
+            function draw() {
+                const { width, height, padX, lineWidth, topY, bottomY, compact } = metrics();
+                if (!width || !height) return;
+
+                const dpr = Math.min(window.devicePixelRatio || 1, 3);
+                const pixelWidth = Math.round(width * dpr);
+                const pixelHeight = Math.round(height * dpr);
+                if (el.canvas.width !== pixelWidth || el.canvas.height !== pixelHeight) {
+                    el.canvas.width = pixelWidth;
+                    el.canvas.height = pixelHeight;
+                }
+
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                ctx.clearRect(0, 0, width, height);
+                if (!state.valid) return;
+
+                const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const textColor = isDark ? '#e2e8f0' : '#1e293b';
+                const subTextColor = isDark ? '#94a3b8' : '#64748b';
+                const trackColor = isDark ? '#334155' : '#cbd5e1';
+                const originColor = '#6366f1';
+                const targetColor = '#10b981';
+
+                const t = (state.x - state.a) / (state.b - state.a);
+                const markerT = clamp(t, -0.06, 1.06);
+                const markerX = padX + markerT * lineWidth;
+
+                // Área de correspondencia
+                ctx.beginPath();
+                ctx.rect(padX, topY, lineWidth, bottomY - topY);
+                ctx.fillStyle = isDark ? 'rgba(99, 102, 241, 0.06)' : 'rgba(99, 102, 241, 0.04)';
+                ctx.fill();
+
+                // Límites laterales
+                ctx.setLineDash([4, 4]);
+                ctx.strokeStyle = trackColor;
+                ctx.lineWidth = 1;
+                [padX, padX + lineWidth].forEach((positionX) => {
+                    ctx.beginPath();
+                    ctx.moveTo(positionX, topY);
+                    ctx.lineTo(positionX, bottomY);
+                    ctx.stroke();
+                });
+                ctx.setLineDash([]);
+
+                const axisFontSize = compact ? 10 : 11;
+                const labelFontSize = compact ? 11 : 12;
+
+                drawAxis({
+                    x: padX, y: topY, length: lineWidth, color: originColor,
+                    title: 'Origen [a, b]',
+                    startLabel: formatNumber(state.a), endLabel: formatNumber(state.b),
+                    textColor, subTextColor, isTop: true, axisFontSize, labelFontSize,
+                });
+
+                drawAxis({
+                    x: padX, y: bottomY, length: lineWidth, color: targetColor,
+                    title: 'Destino [A, B]',
+                    startLabel: formatNumber(state.A), endLabel: formatNumber(state.B),
+                    textColor, subTextColor, isTop: false, axisFontSize, labelFontSize,
+                });
+
+                // Conector x → y
+                const gradient = ctx.createLinearGradient(0, topY, 0, bottomY);
+                gradient.addColorStop(0, originColor);
+                gradient.addColorStop(1, targetColor);
+                ctx.beginPath();
+                ctx.moveTo(markerX, topY);
+                ctx.lineTo(markerX, bottomY);
+                ctx.strokeStyle = gradient;
+                ctx.lineWidth = 2.5;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+
+                drawPoint(markerX, topY, originColor, `x = ${formatNumber(state.x)}`, true, labelFontSize);
+                drawPoint(markerX, bottomY, targetColor, `y = ${formatNumber(state.y)}`, false, labelFontSize);
+            }
+
+            function drawAxis({ x, y, length, color, title, startLabel, endLabel, textColor, subTextColor, isTop, axisFontSize, labelFontSize }) {
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + length, y);
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 4;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+
+                ctx.font = `500 ${axisFontSize}px Inter, sans-serif`;
+                ctx.fillStyle = subTextColor;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'alphabetic';
+                ctx.fillText(title, x + length / 2, isTop ? y - 34 : y + 40);
+
+                [[x, startLabel], [x + length, endLabel]].forEach(([positionX, label]) => {
+                    ctx.beginPath();
+                    ctx.arc(positionX, y, 5, 0, Math.PI * 2);
+                    ctx.fillStyle = color;
+                    ctx.fill();
+
+                    ctx.font = `600 ${labelFontSize}px Inter, sans-serif`;
+                    ctx.fillStyle = textColor;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'alphabetic';
+
+                    const labelWidth = ctx.measureText(label).width;
+                    const safeX = clamp(positionX, labelWidth / 2 + 2, x + length - labelWidth / 2 - 2);
+                    ctx.fillText(label, safeX, y + (isTop ? -14 : 22));
+                });
+            }
+
+            function drawPoint(x, y, color, label, isTop, fontSize) {
+                ctx.beginPath();
+                ctx.arc(x, y, 10, 0, Math.PI * 2);
+                ctx.fillStyle = `${color}33`;
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(x, y, 6, 0, Math.PI * 2);
+                ctx.fillStyle = color;
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+
+                ctx.font = `700 ${fontSize}px Inter, sans-serif`;
+                const boxWidth = ctx.measureText(label).width + 14;
+                const boxHeight = 22;
+                const boxX = clamp(x - boxWidth / 2, 2, metrics().width - boxWidth - 2);
+                const boxY = isTop ? y + 14 : y - 14 - boxHeight;
+
+                pathRoundRect(ctx, boxX, boxY, boxWidth, boxHeight, 6);
+                ctx.fillStyle = color;
+                ctx.fill();
+
+                ctx.fillStyle = '#ffffff';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(label, boxX + boxWidth / 2, boxY + boxHeight / 2 + 1);
+                ctx.textBaseline = 'alphabetic';
+            }
+
+            function resizeCanvas() {
+                draw();
+            }
+
+            /* ---------------------------- interacciones --------------------------- */
+
+            function xFromClientX(clientX) {
+                const rect = el.container.getBoundingClientRect();
+                const compact = rect.width < 420;
+                const padX = compact ? 26 : Math.max(32, Math.min(64, rect.width * 0.09));
+                const lineWidth = Math.max(1, rect.width - padX * 2);
+                const ratio = clamp((clientX - rect.left - padX) / lineWidth, 0, 1);
+                return state.a + ratio * (state.b - state.a);
+            }
+
+            function handleDrag(clientX) {
+                if (!state.valid) return;
+                const x = xFromClientX(clientX);
+                el.x.value = formatNumber(x);
+                render('inputs');
+            }
+
+            el.canvas.addEventListener('pointerdown', (event) => {
+                if (!state.valid) return;
+                state.dragging = true;
+                state.pointerId = event.pointerId;
+                if (el.canvas.setPointerCapture) {
+                    try { el.canvas.setPointerCapture(event.pointerId); } catch (_) { /* noop */ }
+                }
+                handleDrag(event.clientX);
+            });
+
+            el.canvas.addEventListener('pointermove', (event) => {
+                if (!state.dragging || event.pointerId !== state.pointerId) return;
+                handleDrag(event.clientX);
+            });
+
+            ['pointerup', 'pointercancel', 'pointerleave'].forEach((type) => {
+                el.canvas.addEventListener(type, (event) => {
+                    if (event.pointerId !== state.pointerId) return;
+                    state.dragging = false;
+                    state.pointerId = null;
+                });
+            });
+
+            [el.a, el.b, el.targetA, el.targetB, el.x].forEach((input) => {
+                input.addEventListener('input', () => render('inputs'));
+                input.addEventListener('change', () => {
+                    const value = readNumber(input);
+                    if (!Number.isNaN(value)) input.value = formatNumber(value);
+                    render('inputs');
+                });
+            });
+
+            document.querySelectorAll('[data-sign]').forEach((button) => {
+                button.addEventListener('click', () => {
+                    const input = $(button.dataset.sign);
+                    const raw = String(input.value || '').trim();
+                    if (raw === '' || raw === '-') {
+                        input.value = '-';
+                    } else {
+                        input.value = raw.startsWith('-') ? raw.slice(1) : `-${raw}`;
+                    }
+                    input.focus({ preventScroll: true });
+                    render('inputs');
+                });
+            });
+
+            el.slider.addEventListener('input', () => render('slider'));
+
+            /* ------------------------------ portapapeles -------------------------- */
+
+            function legacyCopy(text) {
+                const helper = document.createElement('textarea');
+                helper.value = text;
+                helper.setAttribute('readonly', '');
+                helper.style.position = 'fixed';
+                helper.style.top = '-1000px';
+                helper.style.opacity = '0';
+                document.body.appendChild(helper);
+                helper.select();
+                helper.setSelectionRange(0, helper.value.length);
+                try { document.execCommand('copy'); } catch (_) { /* noop */ }
+                document.body.removeChild(helper);
+            }
+
+            el.copyBtn.addEventListener('click', async () => {
+                if (!state.valid) return;
+                const text = el.output.textContent.trim();
+                try {
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(text);
+                    } else {
+                        legacyCopy(text);
+                    }
+                    showToast('Resultado copiado al portapapeles');
+                } catch (_) {
+                    legacyCopy(text);
+                    showToast('Resultado copiado al portapapeles');
+                }
+            });
+
+            /* -------------------------------- PWA -------------------------------- */
+
+            const isStandalone = () =>
+                window.matchMedia('(display-mode: standalone)').matches ||
+                window.matchMedia('(display-mode: minimal-ui)').matches ||
+                window.navigator.standalone === true;
+
+            const isIOS = () =>
+                /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+                (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+            let installPrompt = null;
+
+            function revealInstall() {
+                if (!isStandalone()) el.installBtn.classList.remove('hidden');
+            }
+
+            window.addEventListener('beforeinstallprompt', (event) => {
+                event.preventDefault();
+                installPrompt = event;
+                revealInstall();
+            });
+
+            el.installBtn.addEventListener('click', async () => {
+                if (installPrompt) {
+                    installPrompt.prompt();
+                    try {
+                        const choice = await installPrompt.userChoice;
+                        if (choice && choice.outcome === 'accepted') el.installBtn.classList.add('hidden');
+                    } catch (_) { /* noop */ }
+                    installPrompt = null;
+                    return;
+                }
+                showToast('En iOS: Compartir → “Añadir a pantalla de inicio”', 5000);
+            });
+
+            window.addEventListener('appinstalled', () => {
+                installPrompt = null;
+                el.installBtn.classList.add('hidden');
+                showToast('Aplicación instalada');
+            });
+
+            if (isIOS() && !isStandalone()) revealInstall();
+
+            function setOfflineStatus(text, tone) {
+                const tones = {
+                    ready: 'bg-emerald-500',
+                    offline: 'bg-amber-500',
+                    pending: 'bg-slate-400',
+                    error: 'bg-rose-500',
+                };
+                el.netDot.className = `h-1.5 w-1.5 rounded-full transition-colors ${tones[tone] || tones.pending}`;
+                el.netText.textContent = text;
+            }
+
+            function showUpdate() {
+                el.updateToast.classList.remove('-translate-y-24', 'opacity-0');
+                el.updateToast.classList.add('translate-y-0', 'opacity-100');
+            }
+
+            el.reloadBtn.addEventListener('click', async () => {
+                reloading = true;
+                const registration = await navigator.serviceWorker.getRegistration();
+                if (registration && registration.waiting) {
+                    registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+                } else {
+                    window.location.reload();
+                }
+            });
+
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    if (reloading) window.location.reload();
+                });
+
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker
+                        .register('./sw.js', { scope: './' })
+                        .then((registration) => {
+                            setOfflineStatus('Disponible sin conexión', 'ready');
+
+                            if (registration.waiting && navigator.serviceWorker.controller) showUpdate();
+
+                            registration.addEventListener('updatefound', () => {
+                                const installing = registration.installing;
+                                if (!installing) return;
+                                installing.addEventListener('statechange', () => {
+                                    if (installing.state === 'installed' && navigator.serviceWorker.controller) {
+                                        showUpdate();
+                                    }
+                                });
+                            });
+                        })
+                        .catch((error) => {
+                            console.warn('[PWA] No se pudo registrar el service worker:', error);
+                            setOfflineStatus('Sin caché offline', 'error');
+                        });
+                });
+            } else {
+                setOfflineStatus('Sin soporte offline', 'pending');
+            }
+
+            function updateNetworkStatus() {
+                if (!navigator.onLine) {
+                    setOfflineStatus('Sin conexión · funcionando offline', 'offline');
+                } else if ('serviceWorker' in navigator) {
+                    setOfflineStatus('Disponible sin conexión', 'ready');
+                }
+            }
+
+            window.addEventListener('online', updateNetworkStatus);
+            window.addEventListener('offline', updateNetworkStatus);
+
+            /* --------------------------- ciclo de vida --------------------------- */
+
+            const media = window.matchMedia('(prefers-color-scheme: dark)');
+            if (media.addEventListener) media.addEventListener('change', draw);
+
+            if ('ResizeObserver' in window) {
+                new ResizeObserver(resizeCanvas).observe(el.container);
+            } else {
+                window.addEventListener('resize', resizeCanvas);
+                window.addEventListener('orientationchange', resizeCanvas);
+            }
+
+            if (document.fonts && document.fonts.ready) {
+                document.fonts.ready.then(() => draw());
+            }
+
+            updateNetworkStatus();
+            render('inputs');
+            requestAnimationFrame(draw);
+        })();
+    </script>
+</body>
+</html>
