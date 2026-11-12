@@ -15,7 +15,7 @@
 
 'use strict';
 
-const VERSION = '1.0.1';
+const VERSION = '1.0.5';
 const CACHE_PREFIX = 'mapeolineal-';
 const CACHE_NAME = `${CACHE_PREFIX}v${VERSION}`;
 
@@ -103,8 +103,16 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   const data = event.data || {};
+
   if (data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+    return;
+  }
+
+  // La página pide la versión activa para mostrarla en el chip del encabezado.
+  if (data.type === 'GET_VERSION') {
+    const replyPort = event.ports && event.ports[0];
+    if (replyPort) replyPort.postMessage({ type: 'VERSION', version: VERSION });
   }
 });
 

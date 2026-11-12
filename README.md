@@ -45,6 +45,8 @@ El repositorio se publica como *project site* de GitHub Pages en `https://tecdea
 
 Tras publicar una nueva versión, la app muestra un aviso para recargar y activar el worker actualizado. Cuando cambies `index.html`, `styles.css`, los iconos o las fuentes, incrementa `VERSION` en `sw.js` para invalidar la caché anterior.
 
+El chip junto al título muestra esa misma `VERSION`. La página se la pide al worker activo con `postMessage` + `MessageChannel` (`GET_VERSION`) y, si no responde, recurre al nombre de la caché; así el chip refleja lo que de verdad está en marcha y no una copia del número escrita en el HTML.
+
 ## Uso
 
 1. Define los intervalos origen `[a, b]` y destino `[A, B]` (el botón `±` cambia el signo en móvil).
