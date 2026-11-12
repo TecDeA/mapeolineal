@@ -15,7 +15,7 @@
 
 'use strict';
 
-const VERSION = '1.0.0';
+const VERSION = '1.0.1';
 const CACHE_PREFIX = 'mapeolineal-';
 const CACHE_NAME = `${CACHE_PREFIX}v${VERSION}`;
 
@@ -40,7 +40,6 @@ const PRECACHE_PATHS = [
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon-180.png',
   './icons/favicon-32.png',
-  './icons/favicon-16.png',
   './icons/favicon.svg',
 ];
 
